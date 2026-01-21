@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World - Game Collection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .games-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-title {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .game-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            background: #000;
+            display: block;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+
+        .controls {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hello World</h1>
+        
+        <div class="games-container">
+            <!-- Ping Pong Game -->
+            <div class="game-card">
+                <h2 class="game-title">Ping Pong</h2>
+                <p class="game-info">Click to start. Move mouse up/down to control paddle</p>
+                <canvas id="pingPongCanvas" width="400" height="300"></canvas>
+                <div class="controls">Score: <span id="pingPongScore">0</span></div>
+            </div>
+
+            <!-- Block Blast Game -->
+            <div class="game-card">
+                <h2 class="game-title">Block Blast</h2>
+                <p class="game-info">Click blocks to destroy them. Clear all blocks!</p>
+                <canvas id="blockBlastCanvas" width="400" height="400"></canvas>
+                <div class="controls">Blocks Remaining: <span id="blockBlastScore">0</span></div>
+            </div>
+
+            <!-- Tetris Game -->
+            <div class="game-card">
+                <h2 class="game-title">Tetris</h2>
+                <p class="game-info">Use Arrow Keys: ← → to move, ↑ to rotate, ↓ to drop</p>
+                <canvas id="tetrisCanvas" width="300" height="600"></canvas>
+                <div class="controls">Score: <span id="tetrisScore">0</span> | Level: <span id="tetrisLevel">1</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== PING PONG GAME ====================
+        const pingPongCanvas = document.getElementById('pingPongCanvas');
+        const pingPongCtx = pingPongCanvas.getContext('2d');
+        const pingPongScoreEl = document.getElementById('pingPongScore');
+
+        let ball = {
+            x: pingPongCanvas.width / 2,
+            y: pingPongCanvas.height / 2,
+            radius: 10,
+            dx: 5,
+            dy: 5,
+            speed: 5
+        };
+
+        let paddle = {
+            x: 10,
+            y: pingPongCanvas.height / 2 - 40,
+            width: 10,
+            height: 80
+        };
+
+        let score = 0;
+        let gameStarted = false;
+
+        pingPongCanvas.addEventListener('click', () => {
+            gameStarted = true;
+        });
+
+        pingPongCanvas.addEventListener('mousemove', (e) => {
+            const rect = pingPongCanvas.getBoundingClientRect();
+            paddle.y = e.clientY - rect.top - paddle.height / 2;
+            if (paddle.y < 0) paddle.y = 0;
+            if (paddle.y + paddle.height > pingPongCanvas.height) {
+                paddle.y = pingPongCanvas.height - paddle.height;
+            }
+        });
+
+        function drawPingPong() {
+            pingPongCtx.fillStyle = '#000';
+            pingPongCtx.fillRect(0, 0, pingPongCanvas.width, pingPongCanvas.height);
+
+            // Draw paddle
+            pingPongCtx.fillStyle = '#fff';
+            pingPongCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+            // Draw ball
+            pingPongCtx.beginPath();
+            pingPongCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            pingPongCtx.fillStyle = '#fff';
+            pingPongCtx.fill();
+
+            if (!gameStarted) {
+                pingPongCtx.fillStyle = '#fff';
+                pingPongCtx.font = '20px Arial';
+                pingPongCtx.textAlign = 'center';
+                pingPongCtx.fillText('Click to Start', pingPongCanvas.width / 2, pingPongCanvas.height / 2);
+            } else {
+                // Update ball position
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // Bounce off top and bottom
+                if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= pingPongCanvas.height) {
+                    ball.dy = -ball.dy;
+                }
+
+                // Bounce off paddle
+                if (ball.x - ball.radius <= paddle.x + paddle.width &&
+                    ball.y >= paddle.y && ball.y <= paddle.y + paddle.height &&
+                    ball.dx < 0) {
+                    ball.dx = -ball.dx;
+                    score++;
+                    pingPongScoreEl.textContent = score;
+                    ball.speed += 0.2;
+                    ball.dx = ball.dx > 0 ? ball.speed : -ball.speed;
+                }
+
+                // Reset if ball goes off screen
+                if (ball.x - ball.radius < 0) {
+                    ball.x = pingPongCanvas.width / 2;
+                    ball.y = pingPongCanvas.height / 2;
+                    ball.dx = 5;
+                    ball.dy = 5;
+                    ball.speed = 5;
+                    score = 0;
+                    pingPongScoreEl.textContent = score;
+                    gameStarted = false;
+                }
+
+                // Bounce off right wall
+                if (ball.x + ball.radius >= pingPongCanvas.width) {
+                    ball.dx = -ball.dx;
+                }
+            }
+        }
+
+        setInterval(drawPingPong, 16);
+
+        // ==================== BLOCK BLAST GAME ====================
+        const blockBlastCanvas = document.getElementById('blockBlastCanvas');
+        const blockBlastCtx = blockBlastCanvas.getContext('2d');
+        const blockBlastScoreEl = document.getElementById('blockBlastScore');
+
+        const GRID_SIZE = 8;
+        const CELL_SIZE = blockBlastCanvas.width / GRID_SIZE;
+        let blocks = [];
+        let colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
+
+        function initBlocks() {
+            blocks = [];
+            for (let row = 0; row < GRID_SIZE; row++) {
+                blocks[row] = [];
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    blocks[row][col] = {
+                        value: Math.floor(Math.random() * 5) + 1,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        destroyed: false
+                    };
+                }
+            }
+            updateBlockCount();
+        }
+
+        function updateBlockCount() {
+            let count = 0;
+            for (let row = 0; row < GRID_SIZE; row++) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    if (!blocks[row][col].destroyed) count++;
+                }
+            }
+            blockBlastScoreEl.textContent = count;
+            if (count === 0) {
+                setTimeout(initBlocks, 1000);
+            }
+        }
+
+        function getConnectedBlocks(row, col, visited) {
+            if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE ||
+                visited[row][col] || blocks[row][col].destroyed) {
+                return [];
+            }
+
+            visited[row][col] = true;
+            const currentValue = blocks[row][col].value;
+            const connected = [{ row, col }];
+
+            const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            for (let [dr, dc] of directions) {
+                const newRow = row + dr;
+                const newCol = col + dc;
+                if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
+                    !visited[newRow][newCol] && !blocks[newRow][newCol].destroyed &&
+                    blocks[newRow][newCol].value === currentValue) {
+                    connected.push(...getConnectedBlocks(newRow, newCol, visited));
+                }
+            }
+
+            return connected;
+        }
+
+        blockBlastCanvas.addEventListener('click', (e) => {
+            const rect = blockBlastCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const col = Math.floor(x / CELL_SIZE);
+            const row = Math.floor(y / CELL_SIZE);
+
+            if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
+                const visited = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(false));
+                const connected = getConnectedBlocks(row, col, visited);
+                
+                if (connected.length >= 2) {
+                    connected.forEach(({ row, col }) => {
+                        blocks[row][col].destroyed = true;
+                    });
+                    updateBlockCount();
+                }
+            }
+        });
+
+        function drawBlockBlast() {
+            blockBlastCtx.fillStyle = '#1a1a1a';
+            blockBlastCtx.fillRect(0, 0, blockBlastCanvas.width, blockBlastCanvas.height);
+
+            for (let row = 0; row < GRID_SIZE; row++) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    if (!blocks[row][col].destroyed) {
+                        const x = col * CELL_SIZE;
+                        const y = row * CELL_SIZE;
+
+                        blockBlastCtx.fillStyle = blocks[row][col].color;
+                        blockBlastCtx.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+
+                        blockBlastCtx.fillStyle = '#fff';
+                        blockBlastCtx.font = 'bold 16px Arial';
+                        blockBlastCtx.textAlign = 'center';
+                        blockBlastCtx.fillText(
+                            blocks[row][col].value,
+                            x + CELL_SIZE / 2,
+                            y + CELL_SIZE / 2 + 6
+                        );
+                    }
+                }
+            }
+        }
+
+        initBlocks();
+        setInterval(drawBlockBlast, 16);
+
+        // ==================== TETRIS GAME ====================
+        const tetrisCanvas = document.getElementById('tetrisCanvas');
+        const tetrisCtx = tetrisCanvas.getContext('2d');
+        const tetrisScoreEl = document.getElementById('tetrisScore');
+        const tetrisLevelEl = document.getElementById('tetrisLevel');
+
+        const COLS = 10;
+        const ROWS = 20;
+        const BLOCK_SIZE = tetrisCanvas.width / COLS;
+
+        let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+        let score = 0;
+        let level = 1;
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let lastTime = 0;
+
+        const pieces = [
+            [
+                [1, 1, 1, 1]
+            ],
+            [
+                [1, 1],
+                [1, 1]
+            ],
+            [
+                [0, 1, 0],
+                [1, 1, 1]
+            ],
+            [
+                [0, 1, 1],
+                [1, 1, 0]
+            ],
+            [
+                [1, 1, 0],
+                [0, 1, 1]
+            ],
+            [
+                [1, 0, 0],
+                [1, 1, 1]
+            ],
+            [
+                [0, 0, 1],
+                [1, 1, 1]
+            ]
+        ];
+
+        const colors_tetris = ['#000', '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+
+        let piece = {
+            pos: { x: 0, y: 0 },
+            matrix: null,
+            color: 0
+        };
+
+        function createPiece(type) {
+            return {
+                pos: { x: Math.floor(COLS / 2) - 2, y: 0 },
+                matrix: pieces[type],
+                color: type + 1
+            };
+        }
+
+        piece = createPiece(Math.floor(Math.random() * pieces.length));
+
+        function rotate(matrix) {
+            const N = matrix.length;
+            const rotated = Array(N).fill().map(() => Array(N).fill(0));
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    rotated[j][N - 1 - i] = matrix[i][j];
+                }
+            }
+            return rotated;
+        }
+
+        function isValidMove(p, board, offset = { x: 0, y: 0 }) {
+            const m = p.matrix;
+            const o = { x: p.pos.x + offset.x, y: p.pos.y + offset.y };
+
+            for (let y = 0; y < m.length; y++) {
+                for (let x = 0; x < m[y].length; x++) {
+                    if (m[y][x]) {
+                        const newX = o.x + x;
+                        const newY = o.y + y;
+
+                        if (newX < 0 || newX >= COLS || newY >= ROWS) {
+                            return false;
+                        }
+                        if (newY >= 0 && board[newY][newX]) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        function placePiece() {
+            piece.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        const newY = piece.pos.y + y;
+                        if (newY >= 0) {
+                            board[newY][piece.pos.x + x] = piece.color;
+                        }
+                    }
+                });
+            });
+
+            // Clear lines
+            let linesCleared = 0;
+            for (let y = ROWS - 1; y >= 0; y--) {
+                if (board[y].every(cell => cell !== 0)) {
+                    board.splice(y, 1);
+                    board.unshift(Array(COLS).fill(0));
+                    linesCleared++;
+                    y++;
+                }
+            }
+
+            score += linesCleared * 100 * level;
+            if (linesCleared > 0) {
+                level = Math.floor(score / 1000) + 1;
+                dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+            }
+
+            tetrisScoreEl.textContent = score;
+            tetrisLevelEl.textContent = level;
+
+            piece = createPiece(Math.floor(Math.random() * pieces.length));
+            if (!isValidMove(piece, board)) {
+                // Game over
+                board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+                score = 0;
+                level = 1;
+                dropInterval = 1000;
+                tetrisScoreEl.textContent = score;
+                tetrisLevelEl.textContent = level;
+            }
+        }
+
+        function drawTetris() {
+            tetrisCtx.fillStyle = '#000';
+            tetrisCtx.fillRect(0, 0, tetrisCanvas.width, tetrisCanvas.height);
+
+            // Draw board
+            board.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        tetrisCtx.fillStyle = colors_tetris[value];
+                        tetrisCtx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+                    }
+                });
+            });
+
+            // Draw piece
+            if (piece) {
+                tetrisCtx.fillStyle = colors_tetris[piece.color];
+                piece.matrix.forEach((row, y) => {
+                    row.forEach((value, x) => {
+                        if (value) {
+                            tetrisCtx.fillRect(
+                                (piece.pos.x + x) * BLOCK_SIZE,
+                                (piece.pos.y + y) * BLOCK_SIZE,
+                                BLOCK_SIZE - 1,
+                                BLOCK_SIZE - 1
+                            );
+                        }
+                    });
+                });
+            }
+        }
+
+        function updateTetris(time = 0) {
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            dropCounter += deltaTime;
+            if (dropCounter > dropInterval) {
+                if (isValidMove(piece, board, { x: 0, y: 1 })) {
+                    piece.pos.y++;
+                } else {
+                    placePiece();
+                }
+                dropCounter = 0;
+            }
+
+            drawTetris();
+            requestAnimationFrame(updateTetris);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                if (isValidMove(piece, board, { x: -1, y: 0 })) {
+                    piece.pos.x--;
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (isValidMove(piece, board, { x: 1, y: 0 })) {
+                    piece.pos.x++;
+                }
+            } else if (e.key === 'ArrowDown') {
+                if (isValidMove(piece, board, { x: 0, y: 1 })) {
+                    piece.pos.y++;
+                    score++;
+                    tetrisScoreEl.textContent = score;
+                }
+            } else if (e.key === 'ArrowUp') {
+                const rotated = rotate(piece.matrix);
+                const originalMatrix = piece.matrix;
+                piece.matrix = rotated;
+                if (!isValidMove(piece, board)) {
+                    piece.matrix = originalMatrix;
+                }
+            }
+        });
+
+        updateTetris();
+    </script>
+</body>
+</html>
